@@ -1,7 +1,7 @@
 package com.example;
 
 
-
+import java.time.Instant;
 
 public record NtfyMessageDto(String id, long time, String event, String topic, String type, String message, boolean isLocal) {
 
@@ -18,8 +18,8 @@ public record NtfyMessageDto(String id, long time, String event, String topic, S
      * @param isLocal Alltid true för lokalt skickade meddelanden.
      */
     public NtfyMessageDto(String message, String topic, String type, boolean isLocal) {
-        // Fix: Vi använder 0L för att explicit kasta 0 som en long
-        this(null, 0L, "message", topic, type, message, isLocal);
+
+        this(null, Instant.now().getEpochSecond(), "message", topic, type, message, isLocal);
     }
 
     // Kort konstruktor för att bara skicka en meddelandetext (kanske inte används men fixas för konsekvens)

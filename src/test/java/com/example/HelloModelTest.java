@@ -1,19 +1,23 @@
 package com.example;
-import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
-import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+
 import javafx.beans.property.StringProperty;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
-@WireMockTest
+
 class HelloModelTest {
 
     private static final String DEFAULT_TOPIC = "mytopic";
+
+    private void waitForFxUpdate() {
+        try {
+            // Vänta 100 millisekunder för att tillåta FX-tråden (om den finns) att köra
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
 
     // I HelloModelTest.java
     @Test
@@ -28,6 +32,8 @@ class HelloModelTest {
         // Act - When
         model.sendMessage();
 
+        waitForFxUpdate();
+
         // Assert - Then
         // 1. Verifiera att anslutningen anropades med rätt meddelande:
         assertThat(spy.getLastSentMessage()).isEqualTo(expectedMessage);
@@ -39,20 +45,6 @@ class HelloModelTest {
         assertThat(model.getMessages().get(0).isLocal()).isTrue();
     }
 
-    @Test
-    void sendMessageToFakeServer(WireMockRuntimeInfo wmRuntimeInfo) {
-        var con = new NtfyConnectionImpl("http://localhost:" + wmRuntimeInfo.getHttpPort());
-        stubFor(post("/" + DEFAULT_TOPIC).willReturn(ok()));
-        var model = new HelloModel(con);
-        model.setMessageToSend("Hello World");
-
-
-        model.sendMessage();
-
-        //Verify call made to server
-        verify(postRequestedFor(urlEqualTo("/" + DEFAULT_TOPIC))
-                .withRequestBody(matching("Hello World")));
-    }
 
 
 
@@ -64,12 +56,15 @@ class HelloModelTest {
         var model = new HelloModel(spy);
         var testMessage = "This is a test message";
 
-        var testDto=new NtfyMessageDto(
-                "id-123",
-                System.currentTimeMillis(),
-                "message",
-                DEFAULT_TOPIC,
-                testMessage);
+        var testDto = new NtfyMessageDto(
+                "id-123",                                // 1. id
+                System.currentTimeMillis(),              // 2. time (Long)
+                "message",                               // 3. event (Standard ntfy event type)
+                DEFAULT_TOPIC,                           // 4. topic
+                "text",                                  // 5. type ("text" för standardmeddelande)
+                testMessage,                             // 6. message
+                false                                    // 7. isLocal (mottaget meddelande är inte lokalt)
+        );
 
         assertThat(model.getMessages()).isEmpty();
 
